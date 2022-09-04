@@ -14,6 +14,8 @@ spring:
       deadletter:
          producer: dl.producer.example-spring 
       parkinglot:
-         producer: pl.producer.example-spring   
+         producer: pl.producer.example-spring
+    listener:
+      time-retry: 00 00 10 * * *    
 
 
