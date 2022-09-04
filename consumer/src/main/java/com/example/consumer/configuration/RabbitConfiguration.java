@@ -1,28 +1,47 @@
 package com.example.consumer.configuration;
 
+import java.text.SimpleDateFormat;
+
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @Configuration
 public class RabbitConfiguration {
 
-    @Bean
-    public MessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
-    }
+    @Autowired
+    private ConnectionFactory connectionFactory;
 
     @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory,
-            SimpleRabbitListenerContainerFactoryConfigurer configurer) {
+    SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        configurer.configure(factory, connectionFactory);
+        factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jsonMessageConverter());
         return factory;
     }
 
+    @Bean
+    RabbitTemplate rabbitTemplate() {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        rabbitTemplate.setMessageConverter(jsonMessageConverter());
+        return rabbitTemplate;
+    }
+
+    @Bean
+    Jackson2JsonMessageConverter jsonMessageConverter() {
+        final ObjectMapper mapper = Jackson2ObjectMapperBuilder
+                .json()
+                .modules(new JavaTimeModule())
+                .dateFormat(new SimpleDateFormat())
+                .build();
+        return new Jackson2JsonMessageConverter(mapper);
+    }
 }
