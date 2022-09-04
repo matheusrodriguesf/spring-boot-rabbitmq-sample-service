@@ -12,5 +12,7 @@ spring:
       routing-key:
         producer: rk.producer.example-spring 
       deadletter:
-         producer: dl.producer.example-spring 
+         producer: dl.producer.example-spring
+      parkinglot:
+         producer: pl.producer.example-spring 
 

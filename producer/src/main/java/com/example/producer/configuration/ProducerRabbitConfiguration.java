@@ -1,11 +1,10 @@
 package com.example.producer.configuration;
 
-import java.util.Map;
-
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +21,9 @@ public class ProducerRabbitConfiguration {
     @Value("${spring.rabbitmq.request.deadletter.producer}")
     private String deadLetter;
 
+    @Value("${spring.rabbitmq.request.parkinglot.producer}")
+    private String parkingLot;
+
     @Bean
     DirectExchange exchange() {
         return new DirectExchange(exchange);
@@ -29,15 +31,23 @@ public class ProducerRabbitConfiguration {
 
     @Bean
     Queue deadLetterQueue() {
-        return new Queue(deadLetter);
+        return QueueBuilder.durable(deadLetter)
+                .deadLetterExchange(exchange)
+                .deadLetterRoutingKey(queue)
+                .build();
     }
 
     @Bean
     Queue queue() {
-        Map<String, Object> args = Map.of(
-                "x-dead-letter-exchange", exchange,
-                "x-dead-letter-routing-key", deadLetter);
-        return new Queue(queue, true, false, false, args);
+        return QueueBuilder.durable(queue)
+                .deadLetterExchange(exchange)
+                .deadLetterRoutingKey(deadLetter)
+                .build();
+    }
+
+    @Bean
+    Queue parkingLotQueue() {
+        return new Queue(parkingLot);
     }
 
     @Bean
@@ -52,5 +62,13 @@ public class ProducerRabbitConfiguration {
         return BindingBuilder.bind(deadLetterQueue())
                 .to(exchange())
                 .with(deadLetter);
+
+    }
+
+    @Bean
+    public Binding bindingParkingLot() {
+        return BindingBuilder.bind(parkingLotQueue())
+                .to(exchange())
+                .with(parkingLot);
     }
 }
